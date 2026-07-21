@@ -1,0 +1,24 @@
+namespace: vprofile
+
+ecr: 637423492989.dkr.ecr.eu-west-3.amazonaws.com
+
+app:                       # backend (Tomcat)
+  image: { repo: vprofile-app, tag: "1.1" }
+  replicas: 2
+web:                       # frontend (nginx)
+  image: { repo: vprofile-web, tag: "1.1" }
+  replicas: 2
+db:
+  image: { repo: vprofile-db, tag: "1.1" }
+  storage: "5Gi"
+mc:
+  image: { repo: vprofile-mc, tag: "1.1" }
+rmq:
+  image: { repo: vprofile-rmq, tag: "1.1" }
+es:
+  image: "elasticsearch:7.17.0"
+  storage: "5Gi"
+
+ingress:
+  host: "vprofile.alnaqib.com"
+  certArn: ""

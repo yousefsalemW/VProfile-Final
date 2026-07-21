@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app01
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.app.replicas }}
+  selector:
+    matchLabels:
+      app: app01
+  template:
+    metadata:
+      labels:
+        app: app01
+        tier: backend
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "vprofile"
+        vault.hashicorp.com/agent-inject-secret-db: "secret/data/vprofile/db"
+    spec:
+      serviceAccountName: vprofile-app
+      containers:
+        - name: app01
+          image: "{{ .Values.ecr }}/{{ .Values.app.image.repo }}:{{ .Values.app.image.tag }}"
+          ports:
+            - name: web
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 30
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 60
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app01
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: app01
+  ports:
+    - name: web
+      port: 8080
+      targetPort: 8080

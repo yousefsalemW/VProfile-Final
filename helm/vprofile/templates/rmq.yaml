@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: rmq01, namespace: {{ .Values.namespace }} }
+spec:
+  serviceName: rmq01
+  replicas: 1
+  selector: { matchLabels: { app: rmq01 } }
+  template:
+    metadata: { labels: { app: rmq01, tier: data } }
+    spec:
+      containers:
+        - name: rmq01
+          image: "{{ .Values.ecr }}/{{ .Values.rmq.image.repo }}:{{ .Values.rmq.image.tag }}"
+          ports: [{ containerPort: 5672 }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: rmq01, namespace: {{ .Values.namespace }} }
+spec:
+  selector: { app: rmq01 }
+  ports: [{ port: 5672, targetPort: 5672 }]

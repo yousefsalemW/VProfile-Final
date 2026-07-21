@@ -1,0 +1,47 @@
+# 1) default-deny
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: default-deny, namespace: {{ .Values.namespace }} }
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+# 2) Ingress/ALB -> frontend (nginx :80)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-ingress-to-web, namespace: {{ .Values.namespace }} }
+spec:
+  podSelector: { matchLabels: { tier: frontend } }
+  ingress:
+    - from: [{ namespaceSelector: { matchLabels: { name: ingress-nginx } } }]
+      ports: [{ port: 80 }]
+  # allow DNS egress
+  policyTypes: [Ingress, Egress]
+  egress:
+    - to: [{ namespaceSelector: {} }]
+      ports: [{ port: 53, protocol: UDP }]
+    - to: [{ podSelector: { matchLabels: { tier: backend } } }]
+      ports: [{ port: 8080 }]
+---
+# 3) frontend -> backend (:8080)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-web-to-app, namespace: {{ .Values.namespace }} }
+spec:
+  podSelector: { matchLabels: { tier: backend } }
+  ingress:
+    - from: [{ podSelector: { matchLabels: { tier: frontend } } }]
+      ports: [{ port: 8080 }]
+---
+# 4) backend -> data + DNS
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: allow-app-to-data, namespace: {{ .Values.namespace }} }
+spec:
+  podSelector: { matchLabels: { tier: backend } }
+  policyTypes: [Egress]
+  egress:
+    - to: [{ podSelector: { matchLabels: { tier: data } } }]
+      ports: [{ port: 3306 }, { port: 11211 }, { port: 5672 }, { port: 9300 }]
+    - to: [{ namespaceSelector: {} }]
+      ports: [{ port: 53, protocol: UDP }]

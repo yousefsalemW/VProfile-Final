@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: db01, namespace: {{ .Values.namespace }} }
+spec:
+  serviceName: db01
+  replicas: 1
+  selector: { matchLabels: { app: db01 } }
+  template:
+    metadata: { labels: { app: db01, tier: data } }
+    spec:
+      containers:
+        - name: db01
+          image: "{{ .Values.ecr }}/{{ .Values.db.image.repo }}:{{ .Values.db.image.tag }}"
+          ports: [{ containerPort: 3306 }]
+          volumeMounts: [{ name: data, mountPath: /var/lib/mysql }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: gp2
+        resources: { requests: { storage: {{ .Values.db.storage }} } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: db01, namespace: {{ .Values.namespace }} }
+spec:
+  selector: { app: db01 }
+  ports: [{ port: 3306, targetPort: 3306 }]

@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: vprosearch01, namespace: {{ .Values.namespace }} }
+spec:
+  serviceName: vprosearch01
+  replicas: 1
+  selector: { matchLabels: { app: vprosearch01 } }
+  template:
+    metadata: { labels: { app: vprosearch01, tier: data } }
+    spec:
+      containers:
+        - name: es
+          image: "{{ .Values.es.image }}"
+          env:
+            - { name: discovery.type, value: single-node }
+            - { name: cluster.name, value: vprofile }
+          ports: [{ containerPort: 9300 }, { containerPort: 9200 }]
+          volumeMounts: [{ name: data, mountPath: /usr/share/elasticsearch/data }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: gp2
+        resources: { requests: { storage: {{ .Values.es.storage }} } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: vprosearch01, namespace: {{ .Values.namespace }} }
+spec:
+  selector: { app: vprosearch01 }
+  ports: [{ name: tcp, port: 9300 }, { name: http, port: 9200 }]

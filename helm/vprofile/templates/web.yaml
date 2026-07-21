@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: vproweb, namespace: {{ .Values.namespace }} }
+spec:
+  replicas: {{ .Values.web.replicas }}
+  selector: { matchLabels: { app: vproweb } }
+  template:
+    metadata: { labels: { app: vproweb, tier: frontend } }
+    spec:
+      containers:
+        - name: vproweb
+          image: "{{ .Values.ecr }}/{{ .Values.web.image.repo }}:{{ .Values.web.image.tag }}"
+          ports: [{ containerPort: 80 }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: vproweb, namespace: {{ .Values.namespace }} }
+spec:
+  selector: { app: vproweb }
+  ports: [{ port: 80, targetPort: 80 }]
